@@ -2,7 +2,7 @@
 
 ## Documentation
 
-The ADC is using the I2C address 0x48.
+The ADC is model PCF8591 and is using the I2C address 0x48.
 
 ### Sensors
 
