@@ -2,6 +2,8 @@
 
 ## Documentation
 
+The ADC is using the I2C address 0x48.
+
 ### Sensors
 
 - Ultrasonic sensor
