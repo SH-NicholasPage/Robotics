@@ -1,7 +1,10 @@
-#include <stdio.h>
+#include <iostream>
+#include <chrono>
+#include <thread>
+#include <csignal>
 #include <pigpio.h>
-#include <sys/time.h>
-#include <signal.h>
+
+using namespace std;
 
 #define TRIGGER_PIN 27
 #define ECHO_PIN 22
@@ -9,12 +12,12 @@
 #define MAX_DISTANCE 220
 const int TIMEOUT = (MAX_DISTANCE * 60); //Maximum measure distance * 60
 
-volatile sig_atomic_t stopFlag = 0;
+sig_atomic_t stopFlag = 0;
 
 void signalHandler(int signum)
 {
     stopFlag = 1;
-    printf("Signal %d received.", signum);
+    cout << "Signal " << signum << " received." << endl;
 }
 
 long pulseIn(int, int);
@@ -22,7 +25,7 @@ float getSonar();
 
 int main()
 {
-    printf("Ultrasonic sensor test is starting...\n");
+    cout << "Ultrasonic sensor test is starting..." << endl;
 
     //Can't catch SIGKILL sadge
     signal(SIGINT, signalHandler);
@@ -30,25 +33,24 @@ int main()
 
     if(gpioInitialise() < 0)
     {
-        fprintf(stderr, "Pigpio initialization failed.\n");
+        cerr << "Pigpio initialization failed." << endl;
         return 1;
     }
 
-    float distance = 0;
+    float distance;
     gpioSetMode(TRIGGER_PIN, PI_OUTPUT);
     gpioSetMode(ECHO_PIN, PI_INPUT);
 
-    while(stopFlag == 0)
+    while(stopFlag == 0)//Shut up stupid idiot you are LITERALLY a global signal fool ofc you aren't updated in the loop body why would you be
     {
         distance = getSonar();
-        printf("The distance is %.2f cm\n", distance);
-        fflush(stdout); // Flush printf output
-        time_sleep(1);
+        cout << "The distance is " <<  distance <<  "cm" << endl;
+        this_thread::sleep_for(chrono::seconds(1));
     }
 
     gpioTerminate();
 
-    printf("Gracefully stopping.");//Yeah, right OMEGALUL
+    cout << "Gracefully stopping." << endl;//Yeah, right OMEGALUL
 
     return 0;
 }
@@ -61,10 +63,10 @@ float getSonar()
     for(int i = 0; i < 3; i++)
     {
         gpioWrite(TRIGGER_PIN, PI_HIGH);
-        time_sleep(0.00001);
+        this_thread::sleep_for(chrono::microseconds(10));
         gpioWrite(TRIGGER_PIN, PI_LOW);
         long pingTime = pulseIn(ECHO_PIN, PI_HIGH);
-        distances[i] = (float) pingTime * 343.0f / 2.0f / 10000.0f; //Calc distance with speed of sound (343 m/s)
+        distances[i] = static_cast<float>(pingTime) * 343.0f / 2.0f / 10000.0f; //Calc distance with speed of sound (343 m/s)
 
         for(int j = 0; j < i; j++)
         {
@@ -82,13 +84,13 @@ float getSonar()
 
 long pulseIn(int pinIn, int level)
 {
-    struct timeval tn, t0, t1;
-    long micros = 0;
-    gettimeofday(&t0, NULL);
+    struct timeval tn{}, t0{}, t1{};
+    long micros;
+    gettimeofday(&t0, nullptr);
 
     while(gpioRead(pinIn) != level)
     {
-        gettimeofday(&tn, NULL);
+        gettimeofday(&tn, nullptr);
         if(tn.tv_sec > t0.tv_sec)
         {
             micros = 1000000L;
@@ -101,11 +103,11 @@ long pulseIn(int pinIn, int level)
         if(micros > TIMEOUT) return 0;
     }
 
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
 
     while(gpioRead(pinIn) == level)
     {
-        gettimeofday(&tn, NULL);
+        gettimeofday(&tn, nullptr);
         if(tn.tv_sec > t0.tv_sec)
         {
             micros = 1000000L;
